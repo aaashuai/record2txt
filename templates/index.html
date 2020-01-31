@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh_cn">
+	<head>
+		<meta charset="UTF-8">
+		<title>语音转文字</title>
+		<link rel="stylesheet" type="text/css" href="/static/main.css">
+	</head>
+	<body>
+		<section>
+			<div class="main">
+				<form class="file-form">
+					<a href="javascript:;" class="a-upload">
+						<input type="file" id="upload" name="upload_file" accept="audio/mpeg,audio/mp4">
+						<div class="fileerrorTip"></div>
+						<div class="showFileName">点击上传mp3/m4a格式文件</div>
+						<span id="filename" hidden="true"></span>
+					</a>
+				</form>
+				<progress id="uploadprogress" min="0" max="100" value="0">0</progress>
+			</div>
+		</section>
+		<script type="text/javascript" src="/static/jquery.js"></script>
+		<script type="text/javascript">
+			$(document).ready(function() {
+				var timer;
+				$(".a-upload").on("change", "input[type='file']", function() {
+					var filePath = $(this).val();
+					if (filePath.indexOf("mp3") != -1 || filePath.indexOf("m4a") != -1) {
+						$(".fileerrorTip").html("").hide();
+						var arr = filePath.split('\\');
+						var fileName = arr[arr.length - 1];
+						$(".showFileName").html(`${fileName} 正在上传`);
+						upload();
+						$(".showFileName").html(`${fileName} 上传成功`);
+						$("#filename").html(fileName.split(".")[0]);
+					} else {
+						$(".showFileName").html("");
+						$(".fileerrorTip").html("您未上传文件，或者您上传文件类型有误！").show();
+						return false
+					}
+				})
+
+				function upload() {
+					if (window.FormData) {
+						var formData = new FormData();
+						// 建立一个upload表单项，值为上传的文件
+						formData.append('upload_file', document.getElementById('upload').files[0]);
+						var xhr = new XMLHttpRequest();
+						xhr.open('POST', `http://${window.location.host}/upload`);
+						xhr.upload.onprogress = function(event) {
+							if (event.lengthComputable) {
+								var complete = (event.loaded / event.total * 100 | 0);
+								var progress = document.getElementById('uploadprogress');
+								progress.value = progress.innerHTML = complete;
+							}
+						};
+
+						// 定义上传完成后的回调函数
+						xhr.onload = function() {
+							if (xhr.status === 200) {
+								alert('上传成功');
+								timer = setInterval(get_result, 1000 * 1)
+							} else {
+								alert('出错了');
+							}
+						};
+						xhr.send(formData);
+					}
+				}
+
+				function get_result() {
+					$.ajax({
+						type: "GET",
+						contentType: "application/json;charset=UTF-8",
+						url: "http://${window.location.host}/result",
+						success: function(result) {
+							if (result.ret == 0) {
+								clearInterval(timer);
+								downFile(result.message, $("#filename").html());
+								$(".showFileName").html("点击上传mp3/m4a格式文件");
+							}
+						},
+						error: function(e) {
+							alert(e.status);
+							alert(e.responseText);
+						}
+
+					})
+
+				}
+				
+				function downFile(content, filename) {
+				    // 创建隐藏的可下载链接
+				    var eleLink = document.createElement('a');
+				    eleLink.download = filename;
+				    eleLink.style.display = 'none';
+				    // 字符内容转变成blob地址
+				    var blob = new Blob([content]);
+				    eleLink.href = URL.createObjectURL(blob);
+				    // 触发点击
+				    document.body.appendChild(eleLink);
+				    eleLink.click();
+				    // 然后移除
+				    document.body.removeChild(eleLink);
+				};
+
+			})
+		</script>
+	</body>
+</html>
