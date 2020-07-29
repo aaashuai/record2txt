@@ -1,6 +1,6 @@
 fastapi==0.47.1
 pydub==0.23.1
-uvicorn==0.11.2
+uvicorn==0.11.7
 numpy==1.18.1
 aiofiles==0.4.0
 jinja2==2.11.0
